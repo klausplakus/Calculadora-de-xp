@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Calculadora de Encontro D&D 5e</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 700px;
+            margin: auto;
+            padding: 20px;
+            background: #f4f4f4;
+        }
+        h1, h2 {
+            text-align: center;
+        }
+        input, button {
+            padding: 6px;
+            margin: 5px 0;
+        }
+        .box {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        .monster {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 5px;
+        }
+        .result {
+            font-weight: bold;
+            font-size: 1.2em;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Calculadora de Encontro – D&D 5e</h1>
+
+<div class="box">
+    <h2>Grupo</h2>
+    <label>Nível do grupo:</label><br>
+    <input type="number" id="nivel" min="1" max="20" value="1"><br>
+
+    <label>Quantidade de personagens:</label><br>
+    <input type="number" id="players" min="1" value="4">
+</div>
+
+<div class="box">
+    <h2>Monstros</h2>
+    <div id="monstros"></div>
+    <button onclick="adicionarMonstro()">Adicionar Monstro</button>
+</div>
+
+<div class="box">
+    <button onclick="calcular()">Calcular Dificuldade</button>
+</div>
+
+<div class="box result" id="resultado"></div>
+
+<script>
+/* TABELA DE XP POR NÍVEL (OCULTA NO CÓDIGO) */
+const tabelaXP = {
+    1:  [25, 50, 75, 100],
+    2:  [50, 100, 150, 200],
+    3:  [75, 150, 225, 400],
+    4:  [125, 250, 375, 500],
+    5:  [250, 500, 750, 1100],
+    6:  [300, 600, 900, 1400],
+    7:  [350, 750, 1100, 1700],
+    8:  [450, 900, 1400, 2100],
+    9:  [550, 1100, 1600, 2400],
+    10: [600, 1200, 1900, 2800],
+    11: [800, 1500, 2400, 3600],
+    12: [1000, 2000, 3000, 4500],
+    13: [1100, 2200, 3400, 5100],
+    14: [1250, 2500, 3800, 5700],
+    15: [1400, 2800, 4300, 6500],
+    16: [1600, 3200, 4800, 7200],
+    17: [2000, 3900, 5900, 8800],
+    18: [2100, 4200, 6300, 9500],
+    19: [2400, 4900, 7300, 10900],
+    20: [2800, 5700, 8500, 12700]
+};
+
+/* MULTIPLICADORES POR QUANTIDADE DE MONSTROS */
+function multiplicador(monstros) {
+    if (monstros === 1) return 1;
+    if (monstros === 2) return 1.5;
+    if (monstros >= 3 && monstros <= 6) return 2;
+    if (monstros <= 10) return 2.5;
+    if (monstros <= 14) return 3;
+    return 4;
+}
+
+function adicionarMonstro(xp = "") {
+    const div = document.createElement("div");
+    div.className = "monster";
+    div.innerHTML = `
+        <input type="number" placeholder="XP do monstro" value="${xp}">
+        <button onclick="this.parentElement.remove()">X</button>
+    `;
+    document.getElementById("monstros").appendChild(div);
+}
+
+function calcular() {
+    const nivel = parseInt(document.getElementById("nivel").value);
+    const players = parseInt(document.getElementById("players").value);
+
+  const inputs = document.querySelectorAll("#monstros input");
+let xpTotal = 0;
+let qtdMonstros = 0;
+
+inputs.forEach(i => {
+    const xp = Number(i.value);
+
+    if (xp > 0) {
+        xpTotal += xp;
+        qtdMonstros++;
+    }
+});
+
+    const mult = multiplicador(qtdMonstros);
+    const xpAjustado = xpTotal * mult;
+
+    const limitesBase = tabelaXP[nivel];
+    const limitesGrupo = limitesBase.map(v => v * players);
+
+let dificuldade = "Trivial";
+let mensagemExtra = "";
+
+const limiteMortal = limitesGrupo[3];
+
+if (xpAjustado >= limiteMortal) {
+    const excesso = xpAjustado - limiteMortal;
+    const percentual = (excesso / limiteMortal) * 100;
+
+    if (percentual > 20) {
+        dificuldade = "MUITO MORTAL, MANEIRA AÍ";
+    } else {
+        dificuldade = "Mortal";
+        mensagemExtra = ` (${percentual.toFixed(1)}% acima do limite mortal)`;
+    }
+
+} else if (xpAjustado >= limitesGrupo[2]) {
+    dificuldade = "Difícil";
+} else if (xpAjustado >= limitesGrupo[1]) {
+    dificuldade = "Médio";
+} else if (xpAjustado >= limitesGrupo[0]) {
+    dificuldade = "Fácil";
+}
+
+
+    document.getElementById("resultado").innerHTML = `
+        XP base dos monstros: ${xpTotal}<br>
+        Multiplicador (${qtdMonstros} monstros): x${mult}<br>
+        XP ajustado: ${xpAjustado}<br><br>
+       <strong>Dificuldade do encontro: ${dificuldade}${mensagemExtra}</strong>
+
+    `;
+}
+
+/* Começa com 1 monstro por padrão */
+adicionarMonstro();
+</script>
+
+</body>
+</html>
